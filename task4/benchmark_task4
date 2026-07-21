@@ -1,0 +1,79 @@
+import time
+import matplotlib.pyplot as plt
+from bin_packing_greedy import generate_random_items, first_fit_decreasing
+from bin_packing_sa import simulated_annealing
+
+
+def run_comparison(sizes, capacity=(15, 15, 15), trials=5):
+    results = {
+        "Greedy": {"bins": [], "time": []},
+        "SA": {"bins": [], "time": []}
+    }
+
+    for n in sizes:
+        greedy_bins_list, greedy_times = [], []
+        sa_bins_list, sa_times = [], []
+
+        for trial in range(trials):
+            items = generate_random_items(n=n, num_dimensions=3, max_demand=10, seed=trial)
+
+            t0 = time.perf_counter()
+            greedy_bins = first_fit_decreasing(items, list(capacity))
+            t_greedy = time.perf_counter() - t0
+
+            t0 = time.perf_counter()
+            sa_bins, sa_cost = simulated_annealing(greedy_bins, list(capacity))
+            t_sa = time.perf_counter() - t0
+
+            greedy_bins_list.append(len(greedy_bins))
+            greedy_times.append(t_greedy)
+            sa_bins_list.append(len(sa_bins))
+            sa_times.append(t_sa)
+
+        avg_greedy_bins = sum(greedy_bins_list) / trials
+        avg_greedy_time = sum(greedy_times) / trials
+        avg_sa_bins = sum(sa_bins_list) / trials
+        avg_sa_time = sum(sa_times) / trials
+
+        results["Greedy"]["bins"].append(avg_greedy_bins)
+        results["Greedy"]["time"].append(avg_greedy_time)
+        results["SA"]["bins"].append(avg_sa_bins)
+        results["SA"]["time"].append(avg_sa_time)
+
+        print(f"n={n:<5} | Greedy: {avg_greedy_bins:.1f} bins, {avg_greedy_time:.5f}s"
+              f"  | SA: {avg_sa_bins:.1f} bins, {avg_sa_time:.5f}s")
+
+    return results
+
+
+def plot_results(sizes, results):
+    plt.figure()
+    plt.plot(sizes, results["Greedy"]["bins"], marker='o', label="Greedy")
+    plt.plot(sizes, results["SA"]["bins"], marker='o', label="Simulated Annealing")
+    plt.xlabel("Number of items (n)")
+    plt.ylabel("Average bins used")
+    plt.title("Solution quality: Greedy vs Simulated Annealing")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("task4_quality_comparison.png")
+    plt.close()
+    print("Saved task4_quality_comparison.png")
+
+    # Runtime
+    plt.figure()
+    plt.plot(sizes, results["Greedy"]["time"], marker='o', label="Greedy")
+    plt.plot(sizes, results["SA"]["time"], marker='o', label="Simulated Annealing")
+    plt.xlabel("Number of items (n)")
+    plt.ylabel("Time (seconds)")
+    plt.title("Runtime: Greedy vs Simulated Annealing")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("task4_runtime_comparison.png")
+    plt.close()
+    print("Saved task4_runtime_comparison.png")
+
+
+if __name__ == "__main__":
+    sizes = [10, 20, 50, 100]
+    results = run_comparison(sizes, capacity=(15, 15, 15), trials=5)
+    plot_results(sizes, results)
